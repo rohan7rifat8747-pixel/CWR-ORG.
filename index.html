@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CWR ORG - Earn App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Firebase SDK (Compat Mode) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .animate-marquee { animation: marquee 14s linear infinite; }
+    </style>
+</head>
+<body class="bg-[#f5f7fb] text-slate-800 min-h-screen flex flex-col justify-between font-sans selection:bg-purple-500 overflow-hidden">
+
+    <!-- ৩ সেকেন্ডের বাধ্যবাধকতা বিশিষ্ট রিয়েল-টাইম ডাবল-রিং পালসিং লোগো লোডার [1] -->
+    <div id="splash-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center space-y-5" style="z-index: 99999;">
+        <div class="relative w-24 h-24 flex items-center justify-center mb-1">
+            <!-- Outer spinning ring (লোগোর চারপাশে ঘুরবে, লোগোর ওপরে যাবে না) [1] -->
+            <div class="absolute inset-0 rounded-full border-2 border-t-green-500 border-r-transparent border-b-green-500 border-l-transparent animate-spin"></div>
+            <!-- Circular unobstructed Logo -->
+            <img src="https://www.image2url.com/r2/default/images/1779535413442-44b3723a-e569-4fcb-b6f4-7ca5c8ec2cfb.png" class="absolute w-20 h-20 rounded-full object-cover p-1">
+        </div>
+        <div class="text-center space-y-1.5">
+            <h2 class="text-sm font-black text-slate-800 tracking-wider">CWR ORG</h2>
+            <p class="text-[10px] text-green-600 font-bold flex items-center justify-center space-x-1">
+                <i class="fa-solid fa-circle-notch animate-spin text-[8px]"></i>
+                <span>সার্ভারের সাথে কানেক্ট হচ্ছে...</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- App Shutdown Screen -->
+    <div id="shutdown-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center p-6 text-center hidden" style="z-index: 99998;">
+        <img src="https://www.image2url.com/r2/default/images/1779535413442-44b3723a-e569-4fcb-b6f4-7ca5c8ec2cfb.png" class="w-20 h-20 rounded-full object-cover mb-4">
+        <h2 class="text-sm font-black text-slate-800 uppercase tracking-wide">CWR ORG</h2>
+        <p class="text-xs text-red-600 font-extrabold mt-2">앱 এর কার্যক্রম বন্ধ দয়া করে পরে চেষ্টা করুন।</p>
+    </div>
+
+    <!-- স্ক্রিনের একদম মাঝখানে ভেসে ওঠার নোটিফিকেশন টোস্ট (copied এলার্ট এবং অ্যাড ক্লেইম নোটিফিকেশন) -->
+    <div id="centered-toast" class="fixed inset-0 flex items-center justify-center pointer-events-none hidden transition-all duration-300" style="z-index: 99990;">
+        <div id="toast-bg" class="bg-slate-900/95 text-white px-8 py-4 rounded-3xl shadow-2xl font-black text-xs tracking-wider flex items-center space-x-2.5 border border-slate-800 animate-fade-in">
+            <i id="toast-icon" class="fa-solid fa-copy text-green-400"></i>
+            <span id="toast-text">copied</span>
+        </div>
+    </div>
+
+    <!-- POP-UP WELCOME DIALOG (জরুরী নোটিশ - ফিক্সড লেয়ার z-9999) [1] -->
+    <div id="popup-welcome" class="fixed inset-0 bg-black/70 flex items-center justify-center p-5 hidden" style="z-index: 9999;">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl border border-slate-100 flex flex-col items-center">
+            <div class="bg-green-100/60 p-4 rounded-full text-green-500 text-3xl mb-4 animate-bounce">
+                <i class="fa-solid fa-bell"></i>
+            </div>
+            <h4 id="welcome-title" class="text-sm font-black text-slate-800 mb-2">জরুরী নোটিশ</h4>
+            <p id="welcome-desc" class="text-xs text-gray-500 mb-5 leading-relaxed"></p>
+            <button onclick="dismissWelcomePopup()" class="bg-slate-900 hover:bg-slate-800 text-white font-black py-3 px-8 rounded-2xl text-xs transition w-full shadow-lg shadow-slate-900/10">কাজ শুরু করুন</button>
+        </div>
+    </div>
+
+    <!-- Main Views Container -->
+    <main class="flex-grow overflow-y-auto pb-24 px-4 pt-4 no-scrollbar">
+
+        <!-- ==================== PAGE 1: HOME VIEW ==================== -->
+        <div id="view-home" class="view-section space-y-5">
+            <!-- Image Slider -->
+            <div id="slider-frame" class="relative w-full h-40 overflow-hidden rounded-2xl bg-white border border-slate-200/60 flex items-center justify-center shadow-sm">
+                <div id="slider-empty" class="hidden flex flex-col items-center justify-center text-slate-400 font-bold text-xs">
+                    <i class="fa-regular fa-image text-2xl mb-1 text-slate-300"></i>
+                    <span>নো ইমেজ</span>
+                </div>
+                <div id="slider-container" class="flex h-full transition-transform duration-500 ease-in-out">
+                    <!-- Slides loaded from DB -->
+                </div>
+                <div id="slider-dots" class="absolute bottom-2.5 left-1/2 transform -translate-x-1/2 flex space-x-1.5">
+                    <!-- Dot indicators -->
+                </div>
+            </div>
+
+            <!-- Announcement Notice -->
+            <div class="bg-white border border-slate-100 py-2.5 px-3.5 rounded-xl overflow-hidden flex items-center space-x-3 shadow-sm">
+                <span class="bg-purple-600 text-white text-[9px] px-2 py-0.5 rounded font-extrabold tracking-wider">NOTICE</span>
+                <div class="relative w-full overflow-hidden h-4">
+                    <p id="notice-text" class="absolute whitespace-nowrap text-xs text-slate-600 font-medium animate-marquee">নোটিশ নেই</p>
+                </div>
+            </div>
+
+            <!-- Balance Card -->
+            <div class="bg-gradient-to-br from-purple-600 via-indigo-600 to-indigo-700 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
+                <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[10px] text-purple-100 font-bold tracking-wider uppercase">BALANCE CARD</p>
+                        <h2 class="text-3xl font-black mt-1.5 flex items-baseline space-x-1">
+                            <span id="user-balance">0.00</span>
+                            <span class="text-xs font-bold text-yellow-300">BDT</span>
+                        </h2>
+                    </div>
+                    <div class="bg-white/10 px-3 py-1.5 rounded-xl border border-white/10 text-right">
+                        <span class="text-[9px] text-purple-100 block font-bold">TOTAL REFER</span>
+                        <span id="user-total-refers" class="text-sm font-black text-yellow-300">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Adsterra Platform Navigation (অ্যাড দেখুন ব্যানার) -->
+            <div class="bg-white border border-slate-200/50 rounded-2xl overflow-hidden shadow-sm">
+                <div class="relative w-full h-36 bg-slate-900 flex items-center justify-center border-b border-slate-100">
+                    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover opacity-40">
+                    <div class="relative z-10 text-center px-4">
+                        <h3 class="text-sm font-black text-white tracking-wide">Adsterra Direct Ads</h3>
+                        <p class="text-[9px] text-purple-200 mt-0.5">সহজে অ্যাড দেখে প্রতি ক্লিকে ইনকাম করুন</p>
+                    </div>
+                </div>
+                <div class="p-4 flex justify-between items-center bg-white">
+                    <div class="text-left">
+                        <span class="text-[10px] text-gray-400 block font-bold">AVAILABLE CHANNELS</span>
+                        <span class="text-xs font-black text-emerald-500">ইনস্ট্যান্ট ব্যালেন্স আপডেট</span>
+                    </div>
+                    <button onclick="navigateToPage('view-ads')" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-extrabold text-xs py-3 px-6 rounded-xl shadow-md transition">
+                        অ্যাড দেখুন
+                    </button>
+                </div>
+            </div>
+
+            <!-- Refer Box -->
+            <div class="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm">
+                <h4 class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">আপনার রেফার লিংক</h4>
+                <div class="flex items-center space-x-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/50">
+                    <input type="text" id="ref-link-address" readonly class="bg-transparent text-xs text-purple-600 flex-grow outline-none font-bold select-all" value="">
+                    <button onclick="copyReferLink()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-xs font-extrabold text-white transition">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PAGE 2: ADS VIEW ==================== -->
+        <div id="view-ads" class="view-section hidden space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                <button onclick="navigateToPage('view-home')" class="text-slate-500 hover:text-slate-900 flex items-center space-x-1.5 text-xs font-bold">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>ফিরে যান</span>
+                </button>
+                <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">অ্যাডস ক্যাটাগরি</h3>
+                <span class="w-6"></span>
+            </div>
+            
+            <div id="ads-categories-box" class="space-y-4">
+                <!-- Dynamically loaded from Database -->
+            </div>
+
+            <!-- রিয়েল-টাইম স্ক্রিপ্ট/পপ-আপ ইম্প্রেশন অ্যাডস (ফাঁকা সাদা স্পেস) -->
+            <div class="pt-4 border-t border-slate-200/60">
+                <p class="text-[9px] text-slate-400 font-bold mb-2 uppercase text-center tracking-wider">Sponsored Advertisement</p>
+                <div id="ads-bottom-promo-container" class="w-full flex justify-center items-center overflow-hidden rounded-2xl bg-white border border-slate-200 p-2 shadow-sm min-h-[100px]">
+                    <!-- Adsterra script codes load here automatically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PAGE 3: WALLET VIEW ==================== -->
+        <div id="view-wallet" class="view-section hidden space-y-5">
+            <div class="bg-white border border-slate-100 p-5 rounded-2xl text-center shadow-sm">
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">AVAILABLE CASH BALANCE</p>
+                <h2 class="text-3xl font-black text-slate-900 mt-1"><span id="wallet-balance">0.00</span> <span class="text-xs font-bold text-slate-500">BDT</span></h2>
+                <div class="mt-3 inline-flex items-center space-x-1.5 bg-red-50 text-red-600 text-[10px] py-1.5 px-3.5 rounded-full font-bold">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>উইড্র দেওয়ার জন্য মিনিমাম ৯ জনকে রেফার করতে হবে।</span>
+                </div>
+            </div>
+
+            <!-- Methods Grid (ডায়নামিক অন/অফ লজিক সহ) -->
+            <div class="space-y-2">
+                <p class="text-[10px] font-black text-slate-400 uppercase">উইথড্র মেথড সিলেক্ট করুন</p>
+                <div id="payment-methods-grid" class="grid grid-cols-3 gap-3">
+                    <div id="method-bkash" onclick="selectWithdrawMethod('BKASH')" class="bg-white border border-slate-200/60 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-sm hidden">
+                        <img src="https://www.image2url.com/r2/default/images/1779461263279-dc4d4e68-fe21-4601-a715-017f7c757c05.jpg" alt="BKASH" class="w-10 h-10 rounded-xl object-cover mb-2">
+                        <span class="text-[9px] font-black text-slate-500">BKASH</span>
+                    </div>
+                    <div id="method-nogod" onclick="selectWithdrawMethod('NOGOD')" class="bg-white border border-slate-200/60 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-sm hidden">
+                        <img src="https://www.image2url.com/r2/default/images/1779461345913-35983122-4ccc-4bfc-b364-b037c6d10336.png" alt="NOGOD" class="w-10 h-10 rounded-xl object-cover mb-2">
+                        <span class="text-[9px] font-black text-slate-500">NOGOD</span>
+                    </div>
+                    <div id="method-roket" onclick="selectWithdrawMethod('ROKET')" class="bg-white border border-slate-200/60 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-sm hidden">
+                        <img src="https://www.image2url.com/r2/default/images/1779461428300-a5a7a889-2854-4740-9078-38e745c8bd4e.jpg" alt="ROKET" class="w-10 h-10 rounded-xl object-cover mb-2">
+                        <span class="text-[9px] font-black text-slate-500">ROKET</span>
+                    </div>
+                </div>
+                <p id="method-selected-text" class="text-xs font-bold text-center hidden"></p>
+            </div>
+
+            <!-- Inputs Box -->
+            <div class="bg-white border border-slate-100 p-4 rounded-2xl space-y-4 shadow-sm">
+                <div>
+                    <label class="block text-[9px] font-black text-slate-400 mb-1">WITHDRAW AMOUNT (BDT)</label>
+                    <input type="number" id="withdraw-amount" placeholder="Min 20 BDT" class="w-full bg-slate-50 border border-slate-200/60 rounded-xl py-3 px-4 text-xs focus:ring-1 focus:ring-purple-500 outline-none font-bold">
+                </div>
+                <div>
+                    <label class="block text-[9px] font-black text-slate-400 mb-1" id="account-label">ACCOUNT DETAILS</label>
+                    <input type="text" id="withdraw-number" placeholder="Enter Mobile Number" class="w-full bg-slate-50 border border-slate-200/60 rounded-xl py-3 px-4 text-xs focus:ring-1 focus:ring-purple-500 outline-none font-bold">
+                </div>
+                <button onclick="submitWithdrawRequest()" class="w-full bg-purple-600 hover:bg-purple-700 py-3 rounded-xl font-bold text-xs text-white transition tracking-wider shadow-lg shadow-purple-600/10 uppercase">CASH OUT NOW</button>
+            </div>
+
+            <!-- View Withdraw History Navigation -->
+            <button onclick="navigateToPage('view-withdraw-history')" class="w-full bg-white border border-slate-200/60 py-3.5 px-4 rounded-xl flex justify-between items-center text-xs font-bold shadow-sm hover:bg-slate-50/50">
+                <span>WITHDRAW HISTORY</span>
+                <i class="fa-solid fa-arrow-right text-purple-600"></i>
+            </button>
+        </div>
+
+        <!-- ==================== PAGE 4: WITHDRAW HISTORY VIEW (পেমেন্ট হিস্ট্রি কার্ড) ==================== -->
+        <div id="view-withdraw-history" class="view-section hidden space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                <button onclick="navigateToPage('view-wallet')" class="text-slate-500 hover:text-slate-900 flex items-center space-x-1.5 text-xs font-bold">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>ফিরে যান</span>
+                </button>
+                <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">WITHDRAW HISTORY</h3>
+                <span class="w-6"></span>
+            </div>
+            
+            <div id="personal-history-box" class="space-y-3">
+                <!-- User withdrawal transactions loaded in card layout -->
+            </div>
+        </div>
+
+        <!-- ==================== PAGE 5: TASK VIEW ==================== -->
+        <div id="view-task" class="view-section hidden space-y-5">
+            <div class="bg-gradient-to-r from-indigo-900 to-indigo-950 p-5 rounded-2xl text-white shadow-md">
+                <h3 class="text-sm font-extrabold">ক্লেইম বোনাস কমপ্লিট টাক্স</h3>
+                <p class="text-[9px] text-indigo-200 mt-1">সবগুলো টাস্ক সঠিকভাবে শেষ করে রিওয়ার্ড ক্লেইম করুন</p>
+            </div>
+            
+            <div id="tasks-list-box" class="space-y-3">
+                <!-- Loaded from DB -->
+            </div>
+        </div>
+
+        <!-- ==================== PAGE 6: PROFILE VIEW (ইংরেজি সংস্করণ) ==================== -->
+        <div id="view-profile" class="view-section hidden space-y-5">
+            <div class="bg-white border border-slate-200/50 rounded-2xl p-6 flex flex-col items-center text-center shadow-sm">
+                <img id="user-display-avatar" src="https://www.image2url.com/r2/default/images/1779535413442-44b3723a-e569-4fcb-b6f4-7ca5c8ec2cfb.png" alt="Avatar" class="w-20 h-20 rounded-full border-4 border-purple-500/10 object-cover bg-slate-100 mb-3 shadow-md">
+                <h3 id="user-display-name" class="text-sm font-black text-slate-800">Guest</h3>
+                <p id="user-display-id" class="text-[10px] text-slate-400 font-bold mt-0.5">@guest123</p>
+            </div>
+
+            <!-- Profile Rows with Help option strictly at the bottom -->
+            <div class="bg-white border border-slate-200/50 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between min-h-[300px]">
+                <div class="divide-y divide-slate-100 flex-grow">
+                    <!-- Ad History -->
+                    <button onclick="navigateToPage('view-ad-history')" class="w-full flex items-center justify-between p-4 hover:bg-slate-50/50 transition text-left">
+                        <div class="flex items-center space-x-3">
+                            <div class="bg-purple-50 p-2 rounded-xl text-purple-500 text-sm"><i class="fa-solid fa-rectangle-ad"></i></div>
+                            <span class="text-xs font-bold text-slate-700">Ad History</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-gray-400"></i>
+                    </button>
+                    <!-- Top Sellers -->
+                    <button onclick="navigateToPage('view-top-sellers')" class="w-full flex items-center justify-between p-4 hover:bg-slate-50/50 transition text-left">
+                        <div class="flex items-center space-x-3">
+                            <div class="bg-amber-50 p-2 rounded-xl text-amber-500 text-sm"><i class="fa-solid fa-crown"></i></div>
+                            <span class="text-xs font-bold text-slate-700">Top Sellers</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-gray-400"></i>
+                    </button>
+                    <!-- Refer Link -->
+                    <button onclick="copyReferLink()" class="w-full flex items-center justify-between p-4 hover:bg-slate-50/50 transition text-left">
+                        <div class="flex items-center space-x-3">
+                            <div class="bg-purple-50 p-2 rounded-xl text-purple-500 text-sm"><i class="fa-solid fa-share-nodes"></i></div>
+                            <span class="text-xs font-bold text-slate-700">Refer Link</span>
+                        </div>
+                        <i class="fa-solid fa-copy text-[10px] text-gray-400"></i>
+                    </button>
+                </div>
+                
+                <!-- Help Support Row at the very bottom -->
+                <a id="help-support-btn" href="#" target="_blank" class="flex items-center justify-between p-4 hover:bg-slate-50/50 transition border-t border-slate-100">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-blue-50 p-2 rounded-xl text-blue-500 text-sm"><i class="fa-solid fa-circle-info"></i></div>
+                        <span class="text-xs font-bold text-slate-700">Help</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-[10px] text-gray-400"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- ==================== PAGE 7: AD HISTORY VIEW (অন্য পেজে) ==================== -->
+        <div id="view-ad-history" class="view-section hidden space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                <button onclick="navigateToPage('view-profile')" class="text-slate-500 hover:text-slate-900 flex items-center space-x-1.5 text-xs font-bold">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>ফিরে যান</span>
+                </button>
+                <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Ad History</h3>
+                <span class="w-6"></span>
+            </div>
+            
+            <div id="ad-history-box" class="space-y-2.5">
+                <!-- User ad watches list loaded here -->
+            </div>
+        </div>
+
+        <!-- ==================== PAGE 8: TOP SELLERS VIEW (ডেমোমুক্ত এবং রিয়েল-টাইম) ==================== -->
+        <div id="view-top-sellers" class="view-section hidden space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                <button onclick="navigateToPage('view-profile')" class="text-slate-500 hover:text-slate-900 flex items-center space-x-1 text-xs font-bold">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>প্রোফাইল</span>
+                </button>
+                <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">TOP PERFORMERS</h3>
+                <span class="w-6"></span>
+            </div>
+
+            <!-- Top Sellers Filter Switch Tabs -->
+            <div class="flex bg-slate-200/70 p-1 rounded-xl">
+                <button id="tab-leaderboard-refs" onclick="toggleLeaderboardFilter('refs')" class="flex-1 text-[10px] font-black uppercase py-2 px-3 rounded-lg text-slate-700 bg-white shadow-sm transition">BY REFS</button>
+                <button id="tab-leaderboard-balance" onclick="toggleLeaderboardFilter('balance')" class="flex-1 text-[10px] font-black uppercase py-2 px-3 rounded-lg text-slate-500 hover:text-slate-800 transition">BY BALANCE</button>
+            </div>
+
+            <!-- Leaderboard Podiums -->
+            <div id="podiums-container" class="flex items-end justify-center space-x-2 pt-6 pb-2 hidden">
+                <!-- 2nd Place Podium -->
+                <div id="podium-2nd" class="flex flex-col items-center w-24">
+                    <div class="relative">
+                        <img id="avatar-2nd" src="" class="w-14 h-14 rounded-full object-cover border-[3px] border-[#a0aec0] shadow-md">
+                        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-[#a0aec0] text-white text-[9px] font-black rounded-full w-5 h-5 flex items-center justify-center border-2 border-white">2</div>
+                    </div>
+                    <h5 id="name-2nd" class="text-[10px] font-bold text-slate-700 mt-2 text-center truncate w-full">---</h5>
+                    <span id="score-2nd" class="text-[9px] font-bold text-purple-600">0 Refs</span>
+                    <div class="bg-[#e2e8f0] h-12 w-16 rounded-t-xl mt-1.5 flex items-center justify-center shadow-inner">
+                        <span class="text-xs font-black text-slate-500">2nd</span>
+                    </div>
+                </div>
+
+                <!-- 1st Place Podium -->
+                <div id="podium-1st" class="flex flex-col items-center w-28 -translate-y-2">
+                    <i class="fa-solid fa-crown text-yellow-500 text-lg mb-1 animate-bounce"></i>
+                    <div class="relative">
+                        <img id="avatar-1st" src="" class="w-16 h-16 rounded-full object-cover border-[3px] border-yellow-500 shadow-lg">
+                        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-yellow-500 text-white text-[10px] font-black rounded-full w-5.5 h-5.5 flex items-center justify-center border-2 border-white">1</div>
+                    </div>
+                    <h5 id="name-1st" class="text-xs font-black text-slate-800 mt-2 text-center truncate w-full">---</h5>
+                    <span id="score-1st" class="text-[10px] font-black text-purple-600">0 Refs</span>
+                    <div class="bg-gradient-to-t from-yellow-100 to-yellow-200 h-16 w-20 rounded-t-xl mt-1.5 flex items-center justify-center shadow-md">
+                        <span class="text-xs font-black text-yellow-600">1st</span>
+                    </div>
+                </div>
+
+                <!-- 3rd Place Podium -->
+                <div id="podium-3rd" class="flex flex-col items-center w-24">
+                    <div class="relative">
+                        <img id="avatar-3rd" src="" class="w-14 h-14 rounded-full object-cover border-[3px] border-[#dd6b20] shadow-md">
+                        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-[#dd6b20] text-white text-[9px] font-black rounded-full w-5 h-5 flex items-center justify-center border-2 border-white">3</div>
+                    </div>
+                    <h5 id="name-3rd" class="text-[10px] font-bold text-slate-700 mt-2 text-center truncate w-full">---</h5>
+                    <span id="score-3rd" class="text-[9px] font-bold text-purple-600">0 Refs</span>
+                    <div class="bg-[#feebc8] h-10 w-16 rounded-t-xl mt-1.5 flex items-center justify-center shadow-inner">
+                        <span class="text-xs font-black text-[#dd6b20]">3rd</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- "টপ সেলার নেই" নোটিফিকেশন বক্স -->
+            <div id="leaderboard-empty-state" class="bg-white border border-slate-100 p-10 rounded-3xl text-center shadow-sm hidden">
+                <i class="fa-solid fa-circle-info text-slate-300 text-4xl mb-3"></i>
+                <p class="text-xs text-slate-400 font-extrabold uppercase">টপ সেলার নেই</p>
+                <p class="text-[10px] text-slate-400 mt-1">অংশগ্রহণ করতে হলে কমপক্ষে ১টি রেফার থাকতে হবে।</p>
+            </div>
+
+            <!-- Leaderboard List -->
+            <div id="leaderboard-list" class="space-y-2 max-h-72 overflow-y-auto no-scrollbar pb-4">
+                <!-- Other top performers list loaded here -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-slate-200/80 py-3 px-6 flex justify-between items-center z-40 backdrop-blur-md">
+        <button onclick="switchMainTab('home')" class="nav-btn flex flex-col items-center space-y-1 text-purple-600 transition" id="nav-btn-home">
+            <i class="fa-solid fa-house text-lg"></i>
+            <span class="text-[9px] font-black uppercase">Home</span>
+        </button>
+        <button onclick="switchMainTab('wallet')" class="nav-btn flex flex-col items-center space-y-1 text-gray-400 hover:text-purple-600 transition" id="nav-btn-wallet">
+            <i class="fa-solid fa-wallet text-lg"></i>
+            <span class="text-[9px] font-black uppercase">Wallet</span>
+        </button>
+        <button onclick="switchMainTab('task')" class="nav-btn flex flex-col items-center space-y-1 text-gray-400 hover:text-purple-600 transition" id="nav-btn-task">
+            <i class="fa-solid fa-list-check text-lg"></i>
+            <span class="text-[9px] font-black uppercase">Task</span>
+        </button>
+        <button onclick="switchMainTab('profile')" class="nav-btn flex flex-col items-center space-y-1 text-gray-400 hover:text-purple-600 transition" id="nav-btn-profile">
+            <i class="fa-solid fa-user-circle text-lg"></i>
+            <span class="text-[9px] font-black uppercase">Profile</span>
+        </button>
+    </nav>
+
+    <!-- Popup Modal -->
+    <div id="popup-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-55 hidden">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-xs text-center shadow-2xl border border-slate-100">
+            <div id="popup-modal-icon" class="text-3xl mb-3"></div>
+            <h4 id="popup-modal-title" class="text-sm font-black text-slate-800 mb-1.5"></h4>
+            <p id="popup-modal-desc" class="text-xs text-gray-500 mb-5 leading-relaxed"></p>
+            <button onclick="hidePopupModal()" class="bg-purple-600 hover:bg-purple-700 text-white font-extrabold py-2.5 px-6 rounded-xl text-xs transition w-full">ঠিক আছে</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP JAVASCRIPT -->
+    <script>
+        // -----------------------------------------------------------------
+        // ১. ফায়ারবেস রিয়েল কনফিগারেশন
+        // -----------------------------------------------------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPzbIjV92Lh7Ry1irVjCr1ovnG3_XhmWY",
+            authDomain: "gftp-netware.firebaseapp.com",
+            databaseURL: "https://gftp-netware-default-rtdb.firebaseio.com",
+            projectId: "gftp-netware",
+            storageBucket: "gftp-netware.firebasestorage.app",
+            messagingSenderId: "69937539634",
+            appId: "1:69937539634:web:66fcc3c27a591002e46a2b",
+            measurementId: "G-CJKR112KJY"
+        };
+
+        let database = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+        } catch (err) {
+            console.error("ফায়ারবেস কানেকশন ইনিশিয়েট করতে ব্যর্থ:", err);
+        }
+
+        // -----------------------------------------------------------------
+        // ২. রিয়েল-টাইম টেলিগ্রাম ইউজার ডিটেকশন ও ডাটা স্ট্রাকচার
+        // -----------------------------------------------------------------
+        const tg = window.Telegram?.WebApp;
+        if (tg) tg.expand();
+
+        let tgUser = {
+            id: 7485337532, 
+            first_name: "Guest", 
+            last_name: "",
+            username: "guest123", 
+            photo_url: "https://www.image2url.com/r2/default/images/1779535413442-44b3723a-e569-4fcb-b6f4-7ca5c8ec2cfb.png"
+        };
+
+        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            tgUser = tg.initDataUnsafe.user;
+            if (!tgUser.photo_url) {
+                tgUser.photo_url = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(tgUser.first_name)}`;
+            }
+        }
+
+        let appState = {
+            balance: 0.00,
+            refers: {},
+            referredBy: null,
+            adsWatched: {},
+            tasksCompleted: {},
+            withdrawals: {},
+            adHistory: {}
+        };
+
+        let systemSettings = {
+            minWithdraw: 150,
+            helpLink: "https://t.me/cwr_org_bot",
+            notice: "অ্যাডস্টারার সম্পূর্ণ কাজ শেষ করে ৫ টাকা রেফার রিওয়ার্ড ক্লেইম করুন!",
+            referBonus: 5.00,
+            popupEnabled: true, 
+            popupTitle: "জরুরী নোটিশ",
+            popupDesc: "আমাদের অ্যাপে আপনাকে স্বাগতম। প্রতিদিন অ্যাড দেখুন এবং টাকা আয় করুন! 😍"
+        };
+
+        let slidesData = [];
+        let adsData = {};
+        let globalCategories = {}; // রিয়েল-টাইম ক্যাটাগরি ম্যাপিং অবজেক্ট [1]
+        let tasksData = {};
+        let topPerformersList = [];
+
+        let activeSlideIdx = 0;
+        let sliderTimer = null;
+        let selectedPayment = null;
+        let activeLeaderboardFilter = 'refs';
+
+        // ১৬ সেকেন্ড কাউন্টডাউন ট্র্যাকিং ভেরিয়েবল
+        let activeWatchingAdId = null;
+        let adWatchStartTime = null;
+
+        // ৩ সেকেন্ডের সর্বোচ্চ লোডিং টাইম কন্ট্রোলার [1]
+        const appStartTime = Date.now();
+
+        // -----------------------------------------------------------------
+        // ৩. can অ্যাপ্লিকেশন ইনিশিয়েলাইজেশন
+        // -----------------------------------------------------------------
+        window.onload = function() {
+            setupRealtimeProfile();
+            if (database) {
+                loadRealtimeDatabaseData();
+            } else {
+                dismissLoaderWithDelay();
+            }
+        };
+
+        function setupRealtimeProfile() {
+            try {
+                const fullName = (tgUser.first_name + " " + (tgUser.last_name || "")).trim();
+                document.getElementById('user-display-name').innerText = fullName;
+                const formattedIdOrUsername = tgUser.username ? `@${tgUser.username}` : `ID: ${tgUser.id}`;
+                document.getElementById('user-display-id').innerText = formattedIdOrUsername;
+                document.getElementById('ref-link-address').value = `https://t.me/cwr_org_bot?start=${tgUser.id}`;
+                document.getElementById('user-display-avatar').src = tgUser.photo_url;
+            } catch (err) {
+                console.error("প্রোফাইল ইমেজ লোড করতে ব্যর্থ:", err);
+            }
+        }
+
+        function loadRealtimeDatabaseData() {
+            // ১. অ্যাপ কার্যক্রম বন্ধের চেক
+            database.ref('config/appStatus').on('value', (snap) => {
+                const status = snap.val();
+                if (status === "closed") {
+                    document.getElementById('shutdown-screen').classList.remove('hidden');
+                    dismissLoaderWithDelay();
+                } else {
+                    document.getElementById('shutdown-screen').classList.add('hidden');
+                }
+            });
+
+            // ২. নোটিশ, পপআপ এবং জেনারেল কনফিগারেশন লিসেনার
+            database.ref('config').on('value', (snap) => {
+                const val = snap.val();
+                if (val) {
+                    systemSettings = { ...systemSettings, ...val };
+                    applyAppConfigurations();
+                    updateDynamicPaymentMethodsVisibility();
+                }
+            });
+
+            // ৩. ইমেজ স্লাইডার ইমেজ লিসেনার
+            database.ref('slides').on('value', (snap) => {
+                slidesData = snap.val() || [];
+                renderImageSlider();
+            });
+
+            // ৪. ক্যাটাগরি এবং বিজ্ঞাপন লুপ (ক্যাটাগরি রি-লিংক সমাধান) [1]
+            database.ref('categories').on('value', (snap) => {
+                globalCategories = snap.val() || {};
+                renderAdsPlatform(); // ক্যাটাগরি ডাটা চেঞ্জ হলে সাথে সাথে রি-রেন্ডার হবে [1]
+            });
+
+            database.ref('ads').on('value', (snap) => {
+                adsData = snap.val() || {};
+                renderAdsPlatform();
+            });
+
+            // ফ্রি ইম্প্রেশন অ্যাডস স্ক্রিপ্ট অটো-ইনজেক্টর
+            database.ref('config/bottomAdCode').on('value', (snap) => {
+                const adCode = snap.val() || "";
+                const container = document.getElementById('ads-bottom-promo-container');
+                container.innerHTML = "";
+                
+                if (adCode) {
+                    if (adCode.includes('<script') || adCode.includes('<iframe') || adCode.includes('<div')) {
+                        const iframe = document.createElement('iframe');
+                        iframe.style.border = "none";
+                        iframe.style.width = "100%";
+                        iframe.style.height = "130px";
+                        container.appendChild(iframe);
+                        
+                        const doc = iframe.contentWindow.document;
+                        doc.open();
+                        doc.write(`
+                            <body style="margin:0; padding:0; display:flex; justify-content:center; align-items:center;">
+                                ${adCode}
+                            </body>
+                        `);
+                        doc.close();
+                    } else {
+                        container.innerHTML = `
+                            <a href="https://www.highratecpm.com" target="_blank" class="block w-full rounded-2xl overflow-hidden shadow-sm border border-slate-200">
+                                <img src="${adCode}" class="w-full h-auto object-cover">
+                            </a>
+                        `;
+                    }
+                }
+            });
+
+            // ৫. টাস্ক লিস্ট লিসেনার
+            database.ref('tasks').on('value', (snap) => {
+                tasksData = snap.val() || {};
+                renderTasks();
+            });
+
+            // ৬. টপ সেলারস লিসেনার (সর্বনিম্ন ১ রেফার ফিল্টারিং সহ সর্বোচ্চ ৫০ জন)
+            database.ref('users').on('value', (snap) => {
+                const users = snap.val() || {};
+                const parsed = Object.keys(users).map(key => {
+                    const u = users[key];
+                    const refsList = u.refers ? Object.keys(u.refers).length : 0;
+                    return {
+                        id: u.id,
+                        name: u.name || "Guest",
+                        refers: refsList,
+                        balance: parseFloat(u.balance || 0),
+                        photo_url: u.photo_url || ""
+                    };
+                }).filter(u => u.refers >= 1); // অংশ নিতে হলে ১ রেফারেল সর্বনিম্ন লাগবেই
+
+                topPerformersList = parsed;
+                renderTopSellersLeaderboard();
+            });
+
+            // ৭. কারেন্ট ইউজার অথেন্টিকেশন ও সিঙ্ক
+            handleUserAuthSync();
+        }
+
+        // ৩ সেকেন্ডের সর্বোচ্চ ডিউরেশন কন্ট্রোল করে লোডিং স্ক্রিন সরানোর মেথড (z-index সম্পূর্ণ ফিক্সড) [1]
+        let loaderDismissed = false;
+        function dismissLoaderWithDelay() {
+            if (loaderDismissed) return;
+            loaderDismissed = true;
+            const elapsed = Date.now() - appStartTime;
+            const minWait = 3000; // ৩ সেকেন্ড [1]
+            const remainingTime = Math.max(0, minWait - elapsed);
+            setTimeout(() => {
+                document.getElementById('splash-screen').style.display = 'none';
+            }, remainingTime);
+        }
+
+        function applyAppConfigurations() {
+            const noticeElement = document.getElementById('notice-text');
+            if (systemSettings.notice && systemSettings.notice.trim() !== "") {
+                noticeElement.innerText = systemSettings.notice;
+            } else {
+                noticeElement.innerText = "নোটিশ নেই";
+            }
+
+            document.getElementById('withdraw-amount').placeholder = `Min ${systemSettings.minWithdraw} BDT`;
+            document.getElementById('help-support-btn').href = systemSettings.helpLink;
+            
+            // পপ-আপ নোটিশ প্রদর্শন লজিক (sessionStorage দ্বারা প্রতি সেশনে একবার করে শো হবে) [1]
+            const popupHasSeen = sessionStorage.getItem(`popup_seen_${systemSettings.popupTitle}`);
+            if (systemSettings.popupEnabled && !popupHasSeen) {
+                document.getElementById('welcome-title').innerText = systemSettings.popupTitle;
+                document.getElementById('welcome-desc').innerText = systemSettings.popupDesc;
+                document.getElementById('popup-welcome').classList.remove('hidden');
+            }
+        }
+
+        function updateDynamicPaymentMethodsVisibility() {
+            const bkashBtn = document.getElementById('method-bkash');
+            const nogodBtn = document.getElementById('method-nogod');
+            const roketBtn = document.getElementById('method-roket');
+
+            if (systemSettings.bkash_active !== false) bkashBtn.classList.remove('hidden');
+            else bkashBtn.classList.add('hidden');
+
+            if (systemSettings.nogod_active !== false) nogodBtn.classList.remove('hidden');
+            else nogodBtn.classList.add('hidden');
+
+            if (systemSettings.roket_active !== false) roketBtn.classList.remove('hidden');
+            else roketBtn.classList.add('hidden');
+        }
+
+        function handleUserAuthSync() {
+            const userRef = database.ref(`users/${tgUser.id}`);
+            userRef.once('value', (snap) => {
+                if (!snap.exists()) {
+                    // নতুন ইউজার প্রবেশ করলে এবং ফায়ারবেসে রেকর্ড না থাকলে রেফারাল কাউন্ট হবে [1]
+                    let startParam = tg?.initDataUnsafe?.start_param || getUrlParam('start');
+                    let refBy = (startParam && startParam !== String(tgUser.id)) ? startParam : null;
+
+                    const freshUser = {
+                        id: tgUser.id,
+                        name: (tgUser.first_name + " " + (tgUser.last_name || "")).trim(),
+                        username: tgUser.username || "",
+                        balance: 0.00,
+                        refers: {},
+                        referredBy: refBy,
+                        adsWatched: {},
+                        tasksCompleted: {},
+                        withdrawals: {},
+                        adHistory: {},
+                        lastActive: Date.now()
+                    };
+
+                    userRef.set(freshUser).then(() => {
+                        if (refBy) {
+                            creditReferBonus(refBy, tgUser.id);
+                        }
+                        syncUserData(userRef);
+                    });
+                } else {
+                    // পূর্বেই একাউন্ট থাকলে কোনো প্রকার রেফারল বোনাস দেওয়া হবে না [1]
+                    userRef.update({ lastActive: Date.now() });
+                    syncUserData(userRef);
+                }
+            });
+        }
+
+        function creditReferBonus(referrerId, currentId) {
+            const referrerRef = database.ref(`users/${referrerId}`);
+            referrerRef.once('value', (snap) => {
+                if (snap.exists()) {
+                    const data = snap.val();
+                    let currentRefers = data.refers || {};
+                    if (!currentRefers[currentId]) {
+                        currentRefers[currentId] = true;
+                        referrerRef.update({
+                            balance: parseFloat(data.balance || 0) + parseFloat(systemSettings.referBonus),
+                            refers: currentRefers
+                        });
+                    }
+                }
+            });
+        }
+
+        function syncUserData(userRef) {
+            userRef.on('value', (snap) => {
+                const val = snap.val();
+                if (val) {
+                    appState = val;
+                    updateDashboardAndWalletUI();
+                    renderPersonalTransactions();
+                    renderAdHistory();
+                }
+                dismissLoaderWithDelay(); // ৩ সেকেন্ড লেট করে লোডার রিমুভ হবে [1]
+            });
+        }
+
+        function updateDashboardAndWalletUI() {
+            const bal = parseFloat(appState.balance || 0).toFixed(2);
+            document.getElementById('user-balance').innerText = bal;
+            document.getElementById('wallet-balance').innerText = bal;
+
+            const totalRefs = appState.refers ? Object.keys(appState.refers).length : 0;
+            document.getElementById('user-total-refers').innerText = totalRefs;
+        }
+
+        // -----------------------------------------------------------------
+        // ৪. স্লাইডার নো-ইমেজ কন্ডিশন
+        // -----------------------------------------------------------------
+        function renderImageSlider() {
+            const container = document.getElementById('slider-container');
+            const dots = document.getElementById('slider-dots');
+            const placeholder = document.getElementById('slider-empty');
+
+            container.innerHTML = "";
+            dots.innerHTML = "";
+
+            if (!slidesData || slidesData.length === 0) {
+                placeholder.classList.remove('hidden');
+                container.classList.add('hidden');
+                dots.classList.add('hidden');
+                return;
+            }
+
+            placeholder.classList.add('hidden');
+            container.classList.remove('hidden');
+            dots.classList.remove('hidden');
+
+            slidesData.forEach((url, i) => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = "w-full h-full object-cover flex-shrink-0";
+                container.appendChild(img);
+
+                const dot = document.createElement('div');
+                dot.id = `dot-${i}`;
+                dot.className = `w-1.5 h-1.5 rounded-full transition-all duration-300 ${i === 0 ? 'bg-white w-3' : 'bg-gray-400'}`;
+                dots.appendChild(dot);
+            });
+
+            if (sliderTimer) clearInterval(sliderTimer);
+            sliderTimer = setInterval(() => {
+                activeSlideIdx = (activeSlideIdx + 1) % slidesData.length;
+                container.style.transform = `translateX(-${activeSlideIdx * 100}%)`;
+                
+                document.querySelectorAll('#slider-dots div').forEach((dot, idx) => {
+                    if (idx === activeSlideIdx) {
+                        dot.className = "w-1.5 h-1.5 rounded-full bg-white w-3 transition-all duration-300";
+                    } else {
+                        dot.className = "w-1.5 h-1.5 rounded-full bg-gray-400 transition-all duration-300";
+                    }
+                });
+            }, 5000);
+        }
+
+        // -----------------------------------------------------------------
+        // ৫. স্ক্রিনশটের মতো ডাইনামিক ক্যাটাগরি অ্যান্ড ডার্ক থিম প্ল্যাটফর্ম কার্ড রেন্ডারার
+        // -----------------------------------------------------------------
+        function renderAdsPlatform() {
+            const container = document.getElementById('ads-categories-box');
+            container.innerHTML = "";
+
+            // ১. এডমিন থেকে ক্যাটাগরি এবং বিজ্ঞাপনের রিয়েল-টাইম ডাটা গ্রুপিং [1]
+            const categorized = {};
+            Object.keys(adsData).forEach(id => {
+                const ad = adsData[id];
+                const catId = ad.categoryId;
+                const catObj = globalCategories[catId] || {}; // Optional chaining to prevent TypeErrors [1]
+                
+                const catName = catObj.name || "Platform Ad";
+                const catReward = catObj.reward ? parseFloat(catObj.reward) : 0.00;
+
+                if (!categorized[catName]) {
+                    categorized[catName] = {
+                        reward: catReward,
+                        logo: catObj.logo || "",
+                        list: []
+                    };
+                }
+                categorized[catName].list.push({ id, ...ad });
+            });
+
+            const keys = Object.keys(categorized);
+            if (keys.length === 0) {
+                container.innerHTML = `<p class="text-center text-xs text-gray-400 py-6">কোন অ্যাড পাওয়া যায়নি।</p>`;
+                return;
+            }
+
+            // ২. স্ক্রিনশটের মতো ডার্ক থিম ডিজাইন কার্ড আকারে মেথড ম্যাপিং
+            keys.forEach((catName, index) => {
+                const catInfo = categorized[catName];
+                const listDiv = document.createElement('div');
+                listDiv.className = "space-y-3 mt-3";
+
+                // ডাইনামিক বর্ডার ও আইকন থিমিং (Teal, Purple, Red)
+                let borderStrokeClass = "border-[#10b981]/20"; // green-default
+                let iconWrapperBg = "bg-[#10b981]/10 text-[#10b981]";
+                let iconHTML = `<i class="fa-solid fa-gift"></i>`;
+
+                if (index % 3 === 1) {
+                    borderStrokeClass = "border-[#8b5cf6]/20"; // purple
+                    iconWrapperBg = "bg-[#8b5cf6]/10 text-[#8b5cf6]";
+                    iconHTML = `<i class="fa-solid fa-layer-group"></i>`;
+                } else if (index % 3 === 2) {
+                    borderStrokeClass = "border-[#f43f5e]/20"; // red
+                    iconWrapperBg = "bg-[#f43f5e]/10 text-[#f43f5e]";
+                    iconHTML = `<i class="fa-solid fa-bolt"></i>`;
+                }
+
+                catInfo.list.forEach(ad => {
+                    const watched = (appState.adsWatched && appState.adsWatched[ad.id]) || 0;
+                    const limit = ad.limit || 20;
+
+                    const rowCard = document.createElement('div');
+                    rowCard.className = `bg-[#121824] border ${borderStrokeClass} p-4 rounded-3xl flex items-center justify-between shadow-lg cursor-pointer hover:scale-[1.01] transition-all duration-200`;
+                    
+                    // পুরো কার্ডে ক্লিক করলেই ডাইনামিকালি বিজ্ঞাপন রানিং হবে [1]
+                    rowCard.onclick = () => startAdFocusWatching(ad.id, ad.link || ad.linkOrCode, catInfo.reward);
+
+                    rowCard.innerHTML = `
+                        <div class="flex items-center space-x-3.5">
+                            <!-- Left: Standard Dynamic Color Icon Wrapper -->
+                            <div class="w-12 h-12 rounded-2xl ${iconWrapperBg} flex items-center justify-center text-lg shadow-inner">
+                                ${iconHTML}
+                            </div>
+                            <!-- Center: Platform Information -->
+                            <div class="space-y-1.5">
+                                <h4 class="text-xs font-black text-white tracking-wide">${catName}</h4>
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-[#10b981]/10 text-[#10b981] text-[9px] font-black py-0.5 px-2.5 rounded-lg border border-[#10b981]/25 flex items-center space-x-1">
+                                        <i class="fa-solid fa-coins text-[8px]"></i>
+                                        <span>৳ ${catInfo.reward.toFixed(2)}</span>
+                                    </span>
+                                    <span class="bg-slate-800 text-slate-400 text-[9px] font-black py-0.5 px-2.5 rounded-lg border border-slate-700">
+                                        <i class="fa-solid fa-eye text-[8px] mr-0.5"></i>
+                                        <span>${watched}/${limit}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Right: Standard Round Play Button Icon -->
+                        <div class="w-10 h-10 rounded-full bg-slate-800/80 hover:bg-slate-800 flex items-center justify-center text-slate-400 transition">
+                            <i class="fa-solid fa-play text-xs pl-0.5 text-slate-200"></i>
+                        </div>
+                    `;
+                    listDiv.appendChild(rowCard);
+                });
+
+                container.appendChild(listDiv);
+            });
+        }
+
+        // ১৬ সেকেন্ডের রিয়েল-টাইম ওয়াচডগ (ফোকাস মেথড)
+        function startAdFocusWatching(adId, link, reward) {
+            activeWatchingAdId = adId;
+            adWatchStartTime = Date.now();
+
+            window.open(link, '_blank');
+            showCustomToast("কমপক্ষে ১৬ সেকেন্ড অ্যাড দেখুন", "blue");
+        }
+
+        // উইন্ডো ফোকাস রিসিভার লাইফ-সাইকেল [1]
+        window.addEventListener('focus', () => {
+            if (activeWatchingAdId && adWatchStartTime) {
+                const elapsedSeconds = (Date.now() - adWatchStartTime) / 1000;
+                const targetAdId = activeWatchingAdId;
+                
+                activeWatchingAdId = null;
+                adWatchStartTime = null;
+
+                const adObj = adsData[targetAdId];
+                if (!adObj) return;
+
+                const catObj = globalCategories[adObj.categoryId];
+                const rewardAmount = catObj ? parseFloat(catObj.reward || 0) : 0.00;
+
+                if (elapsedSeconds >= 16) {
+                    // ১. অ্যাড দেখা সম্পূর্ণ হওয়ার সাকসেস নোটিফিকেশন [1]
+                    if (database) {
+                        const userRef = database.ref(`users/${tgUser.id}`);
+                        userRef.once('value').then((snap) => {
+                            const data = snap.val();
+                            const watchedCount = (data.adsWatched && data.adsWatched[targetAdId]) || 0;
+
+                            if (watchedCount < adObj.limit) {
+                                const newWatched = { ...(data.adsWatched || {}), [targetAdId]: watchedCount + 1 };
+                                
+                                const historyRef = database.ref(`users/${tgUser.id}/adHistory`).push();
+                                const historyData = {
+                                    adName: catObj ? catObj.name : "Platform Ad",
+                                    points: rewardAmount,
+                                    date: new Date().toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                };
+
+                                Promise.all([
+                                    historyRef.set(historyData),
+                                    userRef.update({
+                                        balance: parseFloat(data.balance || 0) + rewardAmount,
+                                        adsWatched: newWatched
+                                    })
+                                ]).then(() => {
+                                    showCustomToast("এটি সঠিকভাবে দেখা হয়েছে।", "green"); // সাকসেস মেসেজ [1]
+                                    setTimeout(() => {
+                                        showCustomToast(`${rewardAmount.toFixed(2)} টাকা এড করা হয়েছে।`, "green"); // পেমেন্ট মেসেজ [1]
+                                    }, 1500);
+                                });
+                            }
+                        });
+                    } else {
+                        // অফলাইন ট্র্যাকিং
+                        const watchedCount = appState.adsWatched[targetAdId] || 0;
+                        if (watchedCount < adObj.limit) {
+                            appState.adsWatched[targetAdId] = watchedCount + 1;
+                            appState.balance = parseFloat(appState.balance) + rewardAmount;
+                            
+                            const historyId = "H" + Math.floor(100000 + Math.random() * 900000);
+                            if (!appState.adHistory) appState.adHistory = {};
+                            appState.adHistory[historyId] = {
+                                adName: catObj ? catObj.name : "Platform Ad",
+                                points: rewardAmount,
+                                date: new Date().toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                            };
+
+                            updateDashboardAndWalletUI();
+                            renderAdsPlatform();
+                            renderAdHistory();
+                            showCustomToast("এটি সঠিকভাবে দেখা হয়েছে।", "green");
+                            setTimeout(() => {
+                                showCustomToast(`${rewardAmount.toFixed(2)} টাকা এড করা হয়েছে।`, "green");
+                            }, 1500);
+                        }
+                    }
+                } else {
+                    // ২. ১৬ সেকেন্ড অ্যাড না দেখলে ওয়ার্নিং নোটিফিকেশন [1]
+                    showCustomToast("এটি সঠিকভাবে দেখা হয়নি মিনিমাম ১৬ সেকেন্ড দেখুন।", "red");
+                }
+            }
+        });
+
+        // -----------------------------------------------------------------
+        // ৬. উইথড্রয়াল পেজ এবং মেথড সিলেকশন স্টাইলিং
+        // -----------------------------------------------------------------
+        function selectWithdrawMethod(method) {
+            selectedPayment = method;
+            const bKash = document.getElementById('method-bkash');
+            const nogod = document.getElementById('method-nogod');
+            const roket = document.getElementById('method-roket');
+            const label = document.getElementById('account-label');
+            const field = document.getElementById('withdraw-number');
+            const text = document.getElementById('method-selected-text');
+
+            bKash.className = "bg-white border border-slate-200/60 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-sm";
+            nogod.className = "bg-white border border-slate-200/60 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-sm";
+            roket.className = "bg-white border border-slate-200/60 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-sm";
+
+            text.classList.remove('hidden');
+
+            if (method === 'BKASH') {
+                bKash.className = "bg-white border-2 border-pink-500 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-lg shadow-pink-500/10";
+                text.innerText = "আপনি BKASH সিলেক্ট করেছেন।";
+                text.className = "text-xs font-bold text-center text-pink-500 mt-2";
+                label.innerText = "ACCOUNT DETAILS (BKASH)";
+                field.placeholder = "Enter Mobile Number";
+            } else if (method === 'NOGOD') {
+                nogod.className = "bg-white border-2 border-orange-500 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-lg shadow-orange-500/10";
+                text.innerText = "আপনি NOGOD সিলেক্ট করেছেন।";
+                text.className = "text-xs font-bold text-center text-orange-500 mt-2";
+                label.innerText = "ACCOUNT DETAILS (NOGOD)";
+                field.placeholder = "Enter Mobile Number";
+            } else if (method === 'ROKET') {
+                roket.className = "bg-white border-2 border-blue-500 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-lg shadow-blue-500/10";
+                text.innerText = "আপনি ROKET সিলেক্ট করেছেন।";
+                text.className = "text-xs font-bold text-center text-blue-500 mt-2";
+                label.innerText = "ACCOUNT DETAILS (ROKET)";
+                field.placeholder = "Enter Mobile Number";
+            }
+        }
+
+        function submitWithdrawRequest() {
+            const amountField = document.getElementById('withdraw-amount');
+            const numberField = document.getElementById('withdraw-number');
+            const amount = parseFloat(amountField.value);
+            const num = numberField.value.trim();
+
+            if (!selectedPayment) {
+                openPopupModal("<i class='fa-solid fa-triangle-exclamation text-yellow-500'></i>", "মেথড প্রয়োজন", "উইথড্র করার জন্য মেথড সিলেক্ট করুন।");
+                return;
+            }
+            if (isNaN(amount) || amount < systemSettings.minWithdraw) {
+                openPopupModal("<i class='fa-solid fa-triangle-exclamation text-yellow-500'></i>", "ভুল অ্যামাউন্ট", `মিনিমাম উইড্র ${systemSettings.minWithdraw} BDT।`);
+                return;
+            }
+            if (!num) {
+                openPopupModal("<i class='fa-solid fa-triangle-exclamation text-yellow-500'></i>", "নাম্বার প্রয়োজন", "অনুগ্রহ করে অ্যাকাউন্ট নাম্বার টাইপ করুন।");
+                return;
+            }
+
+            const referCount = appState.refers ? Object.keys(appState.refers).length : 0;
+            if (referCount < 9) {
+                openPopupModal("<i class='fa-solid fa-circle-xmark text-red-500'></i>", "রিকোয়েস্ট বাতিল", "উইড্র নেওয়ার জন্য মিনিমাম ৯ জনকে রেফার করতে হবে।");
+                return;
+            }
+
+            const currentBal = parseFloat(appState.balance || 0);
+            if (currentBal < amount) {
+                openPopupModal("<i class='fa-solid fa-circle-xmark text-red-500'></i>", "অপর্যাপ্ত ব্যালেন্স", "আপনার ব্যালেন্স অপর্যাপ্ত।");
+                return;
+            }
+
+            const transId = "WD" + Math.floor(100000 + Math.random() * 900000);
+            const req = {
+                id: transId,
+                userId: tgUser.id,
+                userName: (tgUser.first_name + " " + (tgUser.last_name || "")).trim(),
+                method: selectedPayment,
+                amount: amount,
+                number: num,
+                date: new Date().toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric' }),
+                status: "Pending"
+            };
+
+            if (database) {
+                const userRef = database.ref(`users/${tgUser.id}`);
+                const globalWdRef = database.ref(`withdrawals/${transId}`);
+                const updatedWithdraws = { ...(appState.withdrawals || {}), [transId]: req };
+
+                Promise.all([
+                    globalWdRef.set(req),
+                    userRef.update({
+                        balance: currentBal - amount,
+                        withdrawals: updatedWithdraws
+                    })
+                ]).then(() => {
+                    amountField.value = "";
+                    numberField.value = "";
+                    openPopupModal("<i class='fa-solid fa-circle-check text-green-500'></i>", "সফল হয়েছে", "আপনার উইথড্র রিকোয়েস্টটি পেন্ডিং তালিকায় যুক্ত হয়েছে।");
+                });
+            } else {
+                appState.balance = currentBal - amount;
+                if (!appState.withdrawals) appState.withdrawals = {};
+                appState.withdrawals[transId] = req;
+
+                updateDashboardAndWalletUI();
+                renderPersonalTransactions();
+                amountField.value = "";
+                numberField.value = "";
+                openPopupModal("<i class='fa-solid fa-circle-check text-green-500'></i>", "সফল হয়েছে (লোকাল মোড)", "উইথড্র ট্রানজেকশন প্রসেস সম্পন্ন হয়েছে।");
+            }
+        }
+
+        function renderPersonalTransactions() {
+            const container = document.getElementById('personal-history-box');
+            container.innerHTML = "";
+            const withdrawals = appState.withdrawals;
+
+            if (withdrawals && Object.keys(withdrawals).length > 0) {
+                Object.keys(withdrawals).forEach(id => {
+                    const item = withdrawals[id];
+                    let badgeBg = "bg-yellow-50 text-yellow-600 border-yellow-200";
+                    if (item.status === "Approved") badgeBg = "bg-green-50 text-green-600 border-green-200";
+                    if (item.status === "Rejected") badgeBg = "bg-red-50 text-red-600 border-red-200";
+
+                    let logoUrl = "https://www.image2url.com/r2/default/images/1779461263279-dc4d4e68-fe21-4601-a715-017f7c757c05.jpg";
+                    if (item.method === "NOGOD") logoUrl = "https://www.image2url.com/r2/default/images/1779461345913-35983122-4ccc-4bfc-b364-b037c6d10336.png";
+                    if (item.method === "ROKET") logoUrl = "https://www.image2url.com/r2/default/images/1779461428300-a5a7a889-2854-4740-9078-38e745c8bd4e.jpg";
+
+                    const card = document.createElement('div');
+                    card.className = "bg-white border border-slate-200/60 p-4 rounded-3xl flex justify-between items-center shadow-sm";
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="relative w-12 h-12 flex items-center justify-center rounded-full bg-slate-50 border border-slate-100">
+                                <img src="${logoUrl}" class="w-9 h-9 rounded-full object-cover">
+                            </div>
+                            <div>
+                                <span class="text-xs font-black text-slate-800 block">${item.method}</span>
+                                <span class="text-[9px] text-gray-400 font-bold block mt-0.5">${item.date}</span>
+                            </div>
+                        </div>
+                        <div class="text-right flex flex-col items-end">
+                            <span class="text-xs font-black text-slate-900 block">৳${parseFloat(item.amount).toFixed(2)} BDT</span>
+                            <span class="inline-block text-[8px] font-black tracking-wider uppercase px-2.5 py-0.5 rounded-full border mt-1.5 ${badgeBg}">${item.status}</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } else {
+                container.innerHTML = `
+                    <div class="bg-white border border-slate-100 p-8 rounded-2xl text-center shadow-sm">
+                        <p class="text-xs text-slate-400 font-bold">কোন হিস্ট্রি পাওয়া যায়নি।</p>
+                    </div>
+                `;
+            }
+        }
+
+        function loadLiveGlobalWithdraws() {
+            if (database) {
+                database.ref('withdrawals').orderByChild('status').equalTo('Approved').limitToLast(10).on('value', (snap) => {
+                    // Global approved payout logs
+                });
+            }
+        }
+
+        // -----------------------------------------------------------------
+        // ७. অ্যাড হিস্ট্রি রেন্ডারিং (Ad History)
+        // -----------------------------------------------------------------
+        function renderAdHistory() {
+            const container = document.getElementById('ad-history-box');
+            container.innerHTML = "";
+            const adHistory = appState.adHistory;
+
+            if (adHistory && Object.keys(adHistory).length > 0) {
+                Object.keys(adHistory).forEach(id => {
+                    const item = adHistory[id];
+                    const card = document.createElement('div');
+                    card.className = "bg-white border border-slate-200/60 p-4 rounded-2xl flex justify-between items-center shadow-sm";
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 text-sm">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold text-slate-800 block truncate max-w-[160px]">${item.adName}</span>
+                                <span class="text-[9px] text-slate-400 font-bold block mt-0.5">${item.date}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-black text-emerald-500 block">+৳${parseFloat(item.points).toFixed(2)}</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } else {
+                container.innerHTML = `
+                    <div class="bg-white border border-slate-100 p-8 rounded-2xl text-center shadow-sm">
+                        <p class="text-xs text-slate-400 font-bold">কোনো অ্যাড হিস্ট্রি পাওয়া যায়নি।</p>
+                    </div>
+                `;
+            }
+        }
+
+        // -----------------------------------------------------------------
+        // ৮. টাক্স লিস্ট রেন্ডারার
+        // -----------------------------------------------------------------
+        function renderTasks() {
+            const container = document.getElementById('tasks-list-box');
+            container.innerHTML = "";
+
+            const keys = Object.keys(tasksData);
+            if (keys.length === 0) {
+                container.innerHTML = `<p class="text-center text-xs text-slate-400 py-6">কোনো টাস্ক সচল নেই।</p>`;
+                return;
+            }
+
+            keys.forEach(id => {
+                const task = tasksData[id];
+                const isCompleted = (appState.tasksCompleted && appState.tasksCompleted[id]) || false;
+
+                const card = document.createElement('div');
+                card.className = "bg-white border border-slate-200/50 p-4 rounded-2xl flex items-center justify-between shadow-sm";
+
+                let rightArea = "";
+                if (isCompleted) {
+                    rightArea = `<span class="text-xs font-black text-red-500">Complete</span>`;
+                } else {
+                    rightArea = `
+                        <div id="wrapper-task-act-${id}">
+                            <button onclick="runTaskProcess('${id}', '${task.link}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] py-2 px-3.5 rounded-lg transition shadow-sm">
+                                Open Link
+                            </button>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <img src="${task.logo || 'https://via.placeholder.com/50'}" class="w-9 h-9 rounded-xl object-cover border border-slate-100 shadow-sm">
+                        <div>
+                            <h4 class="text-xs font-black text-slate-800">${task.title}</h4>
+                            <p class="text-[10px] text-yellow-500 font-extrabold">+${parseFloat(task.points).toFixed(2)} BDT</p>
+                        </div>
+                    </div>
+                    <div>
+                        ${rightArea}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function runTaskProcess(taskId, link) {
+            window.open(link, '_blank');
+            const wrapper = document.getElementById(`wrapper-task-act-${taskId}`);
+            
+            let seconds = 10;
+            wrapper.innerHTML = `<button class="bg-slate-100 text-slate-400 font-bold text-[10px] py-2 px-3.5 rounded-lg cursor-not-allowed" disabled>Wait ${seconds}s</button>`;
+
+            const interval = setInterval(() => {
+                seconds--;
+                if (seconds > 0) {
+                    wrapper.innerHTML = `<button class="bg-slate-100 text-slate-400 font-bold text-[10px] py-2 px-3.5 rounded-lg cursor-not-allowed" disabled>Wait ${seconds}s</button>`;
+                } else {
+                    clearInterval(interval);
+                    wrapper.innerHTML = `
+                        <button onclick="claimTaskPoints('${taskId}')" class="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-extrabold text-[10px] py-2 px-4 rounded-lg transition">
+                            Claim
+                        </button>
+                    `;
+                }
+            }, 1000);
+        }
+
+        function claimTaskPoints(taskId) {
+            if (database) {
+                const userRef = database.ref(`users/${tgUser.id}`);
+                userRef.once('value').then((snap) => {
+                    const data = snap.val();
+                    if (data.tasksCompleted && data.tasksCompleted[taskId]) return;
+
+                    const pts = parseFloat(tasksData[taskId].points || 0);
+                    const updatedTasks = { ...(data.tasksCompleted || {}), [taskId]: true };
+
+                    userRef.update({
+                        balance: parseFloat(data.balance || 0) + pts,
+                        tasksCompleted: updatedTasks
+                    }).then(() => {
+                        openPopupModal("<i class='fa-solid fa-circle-check text-green-500'></i>", "টাস্ক সাকসেস", "টাক্স বোনাস সফলভাবে যুক্ত হয়েছে।");
+                    });
+                });
+            } else {
+                if (appState.tasksCompleted[taskId]) return;
+                const pts = parseFloat(tasksData[taskId].points || 0);
+                appState.tasksCompleted[taskId] = true;
+                appState.balance = parseFloat(appState.balance) + pts;
+
+                updateDashboardAndWalletUI();
+                renderTasks();
+                openPopupModal("<i class='fa-solid fa-circle-check text-green-500'></i>", "টাস্ক সাকসেস (লোকাল মোড)", "টাক্স বোনাস সফলভাবে যুক্ত হয়েছে।");
+            }
+        }
+
+        // -----------------------------------------------------------------
+        // ৯. টপ সেলারস (LEADERBOARD - ডেমো মুক্ত এবং রিয়েল-টাইম)
+        // -----------------------------------------------------------------
+        function toggleLeaderboardFilter(filterType) {
+            activeLeaderboardFilter = filterType;
+            
+            const refsBtn = document.getElementById('tab-leaderboard-refs');
+            const balBtn = document.getElementById('tab-leaderboard-balance');
+
+            if (filterType === 'refs') {
+                refsBtn.className = "flex-1 text-[10px] font-black uppercase py-2 px-3 rounded-lg text-slate-700 bg-white shadow-sm transition";
+                balBtn.className = "flex-1 text-[10px] font-black uppercase py-2 px-3 rounded-lg text-slate-500 hover:text-slate-800 transition";
+            } else {
+                balBtn.className = "flex-1 text-[10px] font-black uppercase py-2 px-3 rounded-lg text-slate-700 bg-white shadow-sm transition";
+                refsBtn.className = "flex-1 text-[10px] font-black uppercase py-2 px-3 rounded-lg text-slate-500 hover:text-slate-800 transition";
+            }
+
+            renderTopSellersLeaderboard();
+        }
+
+        function renderTopSellersLeaderboard() {
+            const sorted = [...topPerformersList].sort((a, b) => {
+                if (activeLeaderboardFilter === 'refs') {
+                    return b.refers - a.refers;
+                } else {
+                    return b.balance - a.balance;
+                }
+            }).slice(0, 50);
+
+            const podiums = document.getElementById('podiums-container');
+            const emptyState = document.getElementById('leaderboard-empty-state');
+            const listContainer = document.getElementById('leaderboard-list');
+
+            listContainer.innerHTML = "";
+
+            if (sorted.length === 0) {
+                podiums.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            podiums.classList.remove('hidden');
+
+            const top3 = sorted.slice(0, 3);
+            const rest = sorted.slice(3);
+
+            if (top3[0]) {
+                document.getElementById('name-1st').innerText = top3[0].name;
+                document.getElementById('score-1st').innerText = activeLeaderboardFilter === 'refs' ? `${top3[0].refers} Refs` : `${top3[0].balance.toFixed(2)} BDT`;
+                document.getElementById('avatar-1st').src = top3[0].photo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(top3[0].name)}`;
+                document.getElementById('podium-1st').style.opacity = "1";
+            } else {
+                document.getElementById('podium-1st').style.opacity = "0";
+            }
+
+            if (top3[1]) {
+                document.getElementById('name-2nd').innerText = top3[1].name;
+                document.getElementById('score-2nd').innerText = activeLeaderboardFilter === 'refs' ? `${top3[1].refers} Refs` : `${top3[1].balance.toFixed(2)} BDT`;
+                document.getElementById('avatar-2nd').src = top3[1].photo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(top3[1].name)}`;
+                document.getElementById('podium-2nd').style.opacity = "1";
+            } else {
+                document.getElementById('podium-2nd').style.opacity = "0";
+            }
+
+            if (top3[2]) {
+                document.getElementById('name-3rd').innerText = top3[2].name;
+                document.getElementById('score-3rd').innerText = activeLeaderboardFilter === 'refs' ? `${top3[2].refers} Refs` : `${top3[2].balance.toFixed(2)} BDT`;
+                document.getElementById('avatar-3rd').src = top3[2].photo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(top3[2].name)}`;
+                document.getElementById('podium-3rd').style.opacity = "1";
+            } else {
+                document.getElementById('podium-3rd').style.opacity = "0";
+            }
+
+            rest.forEach((user, index) => {
+                const rank = index + 4;
+                const scoreDisplay = activeLeaderboardFilter === 'refs' ? `${user.refers} Refs` : `${user.balance.toFixed(2)} BDT`;
+                const userImg = user.photo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`;
+
+                const item = document.createElement('div');
+                item.className = "bg-white border border-slate-150 p-3 rounded-2xl flex justify-between items-center shadow-sm";
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xs font-black text-slate-400 w-5">#${rank}</span>
+                        <img src="${userImg}" class="w-8 h-8 rounded-full border border-slate-100 object-cover">
+                        <h5 class="text-xs font-bold text-slate-700 truncate max-w-[140px]">${user.name}</h5>
+                    </div>
+                    <div class="bg-purple-50/50 px-3.5 py-1.5 rounded-xl border border-purple-100/30">
+                        <span class="text-[10px] font-black text-purple-600">${scoreDisplay}</span>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        // -----------------------------------------------------------------
+        // ১০. পেজ ন্যাভিগেশন, টোস্ট ও গ্লোবাল হেল্পার্স
+        // -----------------------------------------------------------------
+        function navigateToPage(targetPageId) {
+            document.querySelectorAll('.view-section').forEach(view => {
+                view.classList.add('hidden');
+            });
+            document.getElementById(targetPageId).classList.remove('hidden');
+        }
+
+        function switchMainTab(tabName) {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-purple-600');
+                btn.classList.add('text-gray-400');
+            });
+            document.getElementById(`nav-btn-${tabName}`).classList.remove('text-gray-400');
+            document.getElementById(`nav-btn-${tabName}`).classList.add('text-purple-600');
+
+            navigateToPage(`view-${tabName}`);
+        }
+
+        function copyReferLink() {
+            const input = document.getElementById('ref-link-address');
+            
+            const tempEl = document.createElement('textarea');
+            tempEl.value = input.value;
+            document.body.appendChild(tempEl);
+            tempEl.select();
+            tempEl.setSelectionRange(0, 99999);
+            
+            try {
+                document.execCommand('copy');
+                showCenteredToast("copied");
+            } catch (err) {
+                console.error("কপি করতে সমস্যা হয়েছে:", err);
+            }
+            document.body.removeChild(tempEl);
+        }
+
+        function showCenteredToast(msg) {
+            const toast = document.getElementById('centered-toast');
+            const bg = document.getElementById('toast-bg');
+            const icon = document.getElementById('toast-icon');
+            const text = document.getElementById('toast-text');
+            
+            text.innerText = msg;
+
+            // অ্যাড ওয়াচিং নোটিফিকেশনের জন্য ডাইনামিক স্টাইল
+            if (msg.includes("সঠিকভাবে")) {
+                bg.className = "bg-emerald-600 text-white px-8 py-4 rounded-3xl shadow-2xl font-black text-sm tracking-wider flex items-center space-x-2.5 animate-fade-in";
+                icon.className = "fa-solid fa-circle-check text-white";
+            } else if (msg.includes("টাকা")) {
+                bg.className = "bg-emerald-600 text-white px-8 py-4 rounded-3xl shadow-2xl font-black text-sm tracking-wider flex items-center space-x-2.5 animate-fade-in";
+                icon.className = "fa-solid fa-coins text-white animate-bounce";
+            } else if (msg.includes("মিনিমাম")) {
+                bg.className = "bg-red-600 text-white px-8 py-4 rounded-3xl shadow-2xl font-black text-sm tracking-wider flex items-center space-x-2.5 animate-fade-in";
+                icon.className = "fa-solid fa-circle-xmark text-white";
+            } else {
+                // copied বা অন্যান্য ডিফল্ট টোস্ট
+                bg.className = "bg-slate-900/95 text-white px-8 py-4 rounded-3xl shadow-2xl font-black text-sm tracking-wider flex items-center space-x-2.5 border border-slate-800 animate-fade-in";
+                icon.className = "fa-solid fa-copy text-green-400";
+            }
+
+            toast.classList.remove('hidden');
+            toast.classList.add('scale-100', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('scale-100', 'opacity-100');
+                toast.classList.add('hidden');
+            }, 2500);
+        }
+
+        function showCustomToast(msg, colorMode = "black") {
+            const toast = document.getElementById('toast-notif');
+            const bg = document.getElementById('toast-bg');
+            const icon = document.getElementById('toast-icon');
+            const text = document.getElementById('toast-text');
+
+            text.innerText = msg;
+
+            bg.className = "text-white px-6 py-3 rounded-full shadow-2xl font-bold text-xs tracking-wider flex items-center space-x-2";
+            if (colorMode === "green") {
+                bg.classList.add("bg-emerald-600");
+                icon.className = "fa-solid fa-circle-check text-white";
+            } else if (colorMode === "red") {
+                bg.classList.add("bg-red-600");
+                icon.className = "fa-solid fa-circle-xmark text-white";
+            } else if (colorMode === "blue") {
+                bg.classList.add("bg-blue-600");
+                icon.className = "fa-solid fa-clock text-white animate-pulse";
+            } else {
+                bg.classList.add("bg-slate-950");
+                icon.className = "fa-solid fa-check text-green-400";
+            }
+
+            toast.classList.remove('scale-0', 'opacity-0');
+            toast.classList.add('scale-100', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('scale-100', 'opacity-100');
+                toast.classList.add('scale-0', 'opacity-0');
+            }, 2500);
+        }
+
+        function openPopupModal(iconHTML, title, desc) {
+            document.getElementById('popup-modal-icon').innerHTML = iconHTML;
+            document.getElementById('popup-modal-title').innerText = title;
+            document.getElementById('popup-modal-desc').innerText = desc;
+            document.getElementById('popup-modal').classList.remove('hidden');
+        }
+
+        function hidePopupModal() {
+            document.getElementById('popup-modal').classList.add('hidden');
+        }
+
+        function dismissWelcomePopup() {
+            sessionStorage.setItem(`popup_seen_${systemSettings.popupTitle}`, "true");
+            document.getElementById('popup-welcome').classList.add('hidden');
+        }
+
+        function getUrlParam(name) {
+            const res = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+            return res ? res[1] : null;
+        }
+    </script>
+</body>
+</html>
