@@ -26,10 +26,10 @@
 </head>
 <body class="bg-[#f5f7fb] text-slate-800 min-h-screen flex flex-col justify-between font-sans selection:bg-purple-500 overflow-hidden">
 
-    <!-- ৩ সেকেন্ডের বাধ্যবাধকতা বিশিষ্ট রিয়েল-টাইম ডাবল-রিং পালসিং লোগো লোডার [1] -->
+    <!-- ৩ সেকেন্ডের বাধ্যবাধকতা বিশিষ্ট রিয়েল-টাইম ডাবল-রিং পালসিং লোগো লোডার (z-index সম্পূর্ণ ফিক্সড করা হয়েছে) [1] -->
     <div id="splash-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center space-y-5" style="z-index: 99999;">
         <div class="relative w-24 h-24 flex items-center justify-center mb-1">
-            <!-- Outer spinning ring (লোগোর চারপাশে ঘুরবে, লোগোর ওপরে যাবে না) [1] -->
+            <!-- Outer spinning ring -->
             <div class="absolute inset-0 rounded-full border-2 border-t-green-500 border-r-transparent border-b-green-500 border-l-transparent animate-spin"></div>
             <!-- Circular unobstructed Logo -->
             <img src="https://www.image2url.com/r2/default/images/1779535413442-44b3723a-e569-4fcb-b6f4-7ca5c8ec2cfb.png" class="absolute w-20 h-20 rounded-full object-cover p-1">
@@ -50,9 +50,9 @@
         <p class="text-xs text-red-600 font-extrabold mt-2">앱 এর কার্যক্রম বন্ধ দয়া করে পরে চেষ্টা করুন।</p>
     </div>
 
-    <!-- স্ক্রিনের একদম মাঝখানে ভেসে ওঠার নোটিফিকেশন টোস্ট (copied এলার্ট এবং অ্যাড ক্লেইম নোটিফিকেশন) -->
+    <!-- স্ক্রিনের একদম মাঝখানে ভেসে ওঠার নোটিফিকেশন টোস্ট -->
     <div id="centered-toast" class="fixed inset-0 flex items-center justify-center pointer-events-none hidden transition-all duration-300" style="z-index: 99990;">
-        <div id="toast-bg" class="bg-slate-900/95 text-white px-8 py-4 rounded-3xl shadow-2xl font-black text-xs tracking-wider flex items-center space-x-2.5 border border-slate-800 animate-fade-in">
+        <div id="toast-bg" class="bg-slate-950 text-white px-8 py-4 rounded-3xl shadow-2xl font-bold text-sm tracking-wider flex items-center space-x-2.5 border border-slate-800 animate-fade-in">
             <i id="toast-icon" class="fa-solid fa-copy text-green-400"></i>
             <span id="toast-text">copied</span>
         </div>
@@ -115,7 +115,7 @@
                 </div>
             </div>
 
-            <!-- Adsterra Platform Navigation (অ্যাড দেখুন ব্যানার) -->
+            <!-- Adsterra Platform Navigation -->
             <div class="bg-white border border-slate-200/50 rounded-2xl overflow-hidden shadow-sm">
                 <div class="relative w-full h-36 bg-slate-900 flex items-center justify-center border-b border-slate-100">
                     <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover opacity-40">
@@ -180,7 +180,7 @@
                 </div>
             </div>
 
-            <!-- Methods Grid (ডায়নামিক অন/অফ লজিক সহ) -->
+            <!-- Methods Grid (classList টগল ফিক্সড করা হয়েছে) [1] -->
             <div class="space-y-2">
                 <p class="text-[10px] font-black text-slate-400 uppercase">উইথড্র মেথড সিলেক্ট করুন</p>
                 <div id="payment-methods-grid" class="grid grid-cols-3 gap-3">
@@ -420,17 +420,17 @@
     <!-- MAIN APP JAVASCRIPT -->
     <script>
         // -----------------------------------------------------------------
-        // ১. ফায়ারবেস রিয়েল কনফিগারেশন
+        // ১. ফায়ারবেস নতুন রিয়েল কনফিগারেশন [1]
         // -----------------------------------------------------------------
         const firebaseConfig = {
-            apiKey: "AIzaSyBPzbIjV92Lh7Ry1irVjCr1ovnG3_XhmWY",
-            authDomain: "gftp-netware.firebaseapp.com",
-            databaseURL: "https://gftp-netware-default-rtdb.firebaseio.com",
-            projectId: "gftp-netware",
-            storageBucket: "gftp-netware.firebasestorage.app",
-            messagingSenderId: "69937539634",
-            appId: "1:69937539634:web:66fcc3c27a591002e46a2b",
-            measurementId: "G-CJKR112KJY"
+          apiKey: "AIzaSyCNxqKSw-ACWn3EyizcJW4FbeJmeFAp3IQ",
+          authDomain: "cwr-org.firebaseapp.com",
+          databaseURL: "https://cwr-org-default-rtdb.firebaseio.com",
+          projectId: "cwr-org",
+          storageBucket: "cwr-org.firebasestorage.app",
+          messagingSenderId: "863239384599",
+          appId: "1:863239384599:web:fcbd3f491f00dfd48bb652",
+          measurementId: "G-L0L2EYQXKP"
         };
 
         let database = null;
@@ -553,10 +553,10 @@
                 renderImageSlider();
             });
 
-            // ৪. ক্যাটাগরি এবং বিজ্ঞাপন লুপ (ক্যাটাগরি রি-লিংক সমাধান) [1]
+            // ৪. রিয়েল-টাইম ক্যাটাগরি ও অ্যাডস ম্যাপিং লিসেনার [1]
             database.ref('categories').on('value', (snap) => {
                 globalCategories = snap.val() || {};
-                renderAdsPlatform(); // ক্যাটাগরি ডাটা চেঞ্জ হলে সাথে সাথে রি-রেন্ডার হবে [1]
+                renderAdsPlatform(); // ক্যাটাগরি আপডেট হলে অ্যাডস রি-রেন্ডার হবে [1]
             });
 
             database.ref('ads').on('value', (snap) => {
@@ -602,7 +602,7 @@
                 renderTasks();
             });
 
-            // ৬. টপ সেলারস লিসেনার (সর্বনিম্ন ১ রেফার ফিল্টারিং সহ সর্বোচ্চ ৫০ জন)
+            //6. টপ সেলারস লিসেনার (সর্বনিম্ন ১ রেফার ফিল্টারিং সহ সর্বোচ্চ ৫০ জন)
             database.ref('users').on('value', (snap) => {
                 const users = snap.val() || {};
                 const parsed = Object.keys(users).map(key => {
@@ -621,7 +621,7 @@
                 renderTopSellersLeaderboard();
             });
 
-            // ৭. কারেন্ট ইউজার অথেন্টিকেশন ও সিঙ্ক
+            // ७. কারেন্ট ইউজার সিঙ্ক
             handleUserAuthSync();
         }
 
@@ -640,6 +640,7 @@
 
         function applyAppConfigurations() {
             const noticeElement = document.getElementById('notice-text');
+            // নোটিশ ফাঁকা থাকলে "নোটিশ নেই" প্রদর্শন করার লজিক
             if (systemSettings.notice && systemSettings.notice.trim() !== "") {
                 noticeElement.innerText = systemSettings.notice;
             } else {
@@ -676,6 +677,9 @@
         function handleUserAuthSync() {
             const userRef = database.ref(`users/${tgUser.id}`);
             userRef.once('value', (snap) => {
+                const tgName = (tgUser.first_name + " " + (tgUser.last_name || "")).trim();
+                const tgUsernameClean = (tgUser.username || "").toLowerCase();
+
                 if (!snap.exists()) {
                     // নতুন ইউজার প্রবেশ করলে এবং ফায়ারবেসে রেকর্ড না থাকলে রেফারাল কাউন্ট হবে [1]
                     let startParam = tg?.initDataUnsafe?.start_param || getUrlParam('start');
@@ -683,8 +687,8 @@
 
                     const freshUser = {
                         id: tgUser.id,
-                        name: (tgUser.first_name + " " + (tgUser.last_name || "")).trim(),
-                        username: tgUser.username || "",
+                        name: tgName,
+                        username: tgUsernameClean,
                         balance: 0.00,
                         refers: {},
                         referredBy: refBy,
@@ -692,6 +696,7 @@
                         tasksCompleted: {},
                         withdrawals: {},
                         adHistory: {},
+                        photo_url: tgUser.photo_url || "https://www.image2url.com/r2/default/images/1779535413442-44b3723a-e569-4fcb-b6f4-7ca5c8ec2cfb.png",
                         lastActive: Date.now()
                     };
 
@@ -702,8 +707,13 @@
                         syncUserData(userRef);
                     });
                 } else {
-                    // পূর্বেই একাউন্ট থাকলে কোনো প্রকার রেফারল বোনাস দেওয়া হবে না [1]
-                    userRef.update({ lastActive: Date.now() });
+                    // টেলিগ্রামে এড করা মাত্রই ডেমো গেস্ট নাম ও ছবি স্বয়ংক্রিয়ভাবে আসল প্রোফাইলে আপগ্রেড হয়ে যাবে [1]
+                    userRef.update({ 
+                        name: tgName,
+                        username: tgUsernameClean,
+                        photo_url: tgUser.photo_url || "https://www.image2url.com/r2/default/images/1779535413442-44b3723a-e569-4fcb-b6f4-7ca5c8ec2cfb.png",
+                        lastActive: Date.now() 
+                    });
                     syncUserData(userRef);
                 }
             });
@@ -734,6 +744,7 @@
                     updateDashboardAndWalletUI();
                     renderPersonalTransactions();
                     renderAdHistory();
+                    renderTasks(); // টাস্ক লাইভ সিঙ্ক রেন্ডারার [1]
                 }
                 dismissLoaderWithDelay(); // ৩ সেকেন্ড লেট করে লোডার রিমুভ হবে [1]
             });
@@ -798,20 +809,24 @@
         }
 
         // -----------------------------------------------------------------
-        // ৫. স্ক্রিনশটের মতো ডাইনামিক ক্যাটাগরি অ্যান্ড ডার্ক থিম প্ল্যাটফর্ম কার্ড রেন্ডারার
+        // ৫. স্ক্রিনশটের মতো ডাইনামিক ক্যাটাগরি অ্যান্ড ডার্ক থিম প্ল্যাটফর্ম কার্ড রেন্ডারার (অনাথ ফিল্টারিং সহ)
         // -----------------------------------------------------------------
         function renderAdsPlatform() {
             const container = document.getElementById('ads-categories-box');
             container.innerHTML = "";
 
-            // ১. এডমিন থেকে ক্যাটাগরি এবং বিজ্ঞাপনের রিয়েল-টাইম ডাটা গ্রুপিং [1]
             const categorized = {};
             Object.keys(adsData).forEach(id => {
                 const ad = adsData[id];
                 const catId = ad.categoryId;
-                const catObj = globalCategories[catId] || {}; // Optional chaining to prevent TypeErrors [1]
+                const catObj = globalCategories[catId]; // Optional chaining removed to check hard values
                 
-                const catName = catObj.name || "Platform Ad";
+                // যদি অ্যাডটির কোনো ক্যাটাগরি ডাটাবেজে না থাকে, তবে সেটি ইউজার অ্যাপে শো করা হবে না [1]
+                if (!catObj) {
+                    return; // Skip this orphan ad completely [1]
+                }
+                
+                const catName = catObj.name;
                 const catReward = catObj.reward ? parseFloat(catObj.reward) : 0.00;
 
                 if (!categorized[catName]) {
@@ -830,13 +845,12 @@
                 return;
             }
 
-            // ২. স্ক্রিনশটের মতো ডার্ক থিম ডিজাইন কার্ড আকারে মেথড ম্যাপিং
+            // ২. ডার্ক থিম কার্ড লেআউট ডিজাইন
             keys.forEach((catName, index) => {
                 const catInfo = categorized[catName];
                 const listDiv = document.createElement('div');
                 listDiv.className = "space-y-3 mt-3";
 
-                // ডাইনামিক বর্ডার ও আইকন থিমিং (Teal, Purple, Red)
                 let borderStrokeClass = "border-[#10b981]/20"; // green-default
                 let iconWrapperBg = "bg-[#10b981]/10 text-[#10b981]";
                 let iconHTML = `<i class="fa-solid fa-gift"></i>`;
@@ -854,20 +868,18 @@
                 catInfo.list.forEach(ad => {
                     const watched = (appState.adsWatched && appState.adsWatched[ad.id]) || 0;
                     const limit = ad.limit || 20;
+                    const btnId = `ad-btn-${ad.id}`;
 
                     const rowCard = document.createElement('div');
                     rowCard.className = `bg-[#121824] border ${borderStrokeClass} p-4 rounded-3xl flex items-center justify-between shadow-lg cursor-pointer hover:scale-[1.01] transition-all duration-200`;
                     
-                    // পুরো কার্ডে ক্লিক করলেই ডাইনামিকালি বিজ্ঞাপন রানিং হবে [1]
                     rowCard.onclick = () => startAdFocusWatching(ad.id, ad.link || ad.linkOrCode, catInfo.reward);
 
                     rowCard.innerHTML = `
                         <div class="flex items-center space-x-3.5">
-                            <!-- Left: Standard Dynamic Color Icon Wrapper -->
                             <div class="w-12 h-12 rounded-2xl ${iconWrapperBg} flex items-center justify-center text-lg shadow-inner">
                                 ${iconHTML}
                             </div>
-                            <!-- Center: Platform Information -->
                             <div class="space-y-1.5">
                                 <h4 class="text-xs font-black text-white tracking-wide">${catName}</h4>
                                 <div class="flex items-center space-x-2">
@@ -875,14 +887,13 @@
                                         <i class="fa-solid fa-coins text-[8px]"></i>
                                         <span>৳ ${catInfo.reward.toFixed(2)}</span>
                                     </span>
-                                    <span class="bg-slate-800 text-slate-400 text-[9px] font-black py-0.5 px-2.5 rounded-lg border border-slate-700">
+                                    <span class="bg-slate-800 text-slate-400 text-[9px] font-black py-0.5 px-2.5 rounded-lg border border-[#10b981]/25">
                                         <i class="fa-solid fa-eye text-[8px] mr-0.5"></i>
                                         <span>${watched}/${limit}</span>
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        <!-- Right: Standard Round Play Button Icon -->
                         <div class="w-10 h-10 rounded-full bg-slate-800/80 hover:bg-slate-800 flex items-center justify-center text-slate-400 transition">
                             <i class="fa-solid fa-play text-xs pl-0.5 text-slate-200"></i>
                         </div>
@@ -919,7 +930,6 @@
                 const rewardAmount = catObj ? parseFloat(catObj.reward || 0) : 0.00;
 
                 if (elapsedSeconds >= 16) {
-                    // ১. অ্যাড দেখা সম্পূর্ণ হওয়ার সাকসেস নোটিফিকেশন [1]
                     if (database) {
                         const userRef = database.ref(`users/${tgUser.id}`);
                         userRef.once('value').then((snap) => {
@@ -975,14 +985,13 @@
                         }
                     }
                 } else {
-                    // ২. ১৬ সেকেন্ড অ্যাড না দেখলে ওয়ার্নিং নোটিফিকেশন [1]
                     showCustomToast("এটি সঠিকভাবে দেখা হয়নি মিনিমাম ১৬ সেকেন্ড দেখুন।", "red");
                 }
             }
         });
 
         // -----------------------------------------------------------------
-        // ৬. উইথড্রয়াল পেজ এবং মেথড সিলেকশন স্টাইলিং
+        // ৬. উইথড্রয়াল পেজ এবং মেথড সিলেকশন স্টাইলিং (classList টগল ফিক্সড) [1]
         // -----------------------------------------------------------------
         function selectWithdrawMethod(method) {
             selectedPayment = method;
@@ -993,26 +1002,31 @@
             const field = document.getElementById('withdraw-number');
             const text = document.getElementById('method-selected-text');
 
-            bKash.className = "bg-white border border-slate-200/60 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-sm";
-            nogod.className = "bg-white border border-slate-200/60 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-sm";
-            roket.className = "bg-white border border-slate-200/60 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-sm";
+            // hidden ক্লাসটি অক্ষত রেখে কেবল বর্ডার রিমুভ টগল করা হচ্ছে [1]
+            [bKash, nogod, roket].forEach(btn => {
+                btn.classList.remove('border-2', 'border-pink-500', 'border-orange-500', 'border-blue-500', 'shadow-lg');
+                btn.classList.add('border', 'border-slate-200/60', 'shadow-sm');
+            });
 
             text.classList.remove('hidden');
 
             if (method === 'BKASH') {
-                bKash.className = "bg-white border-2 border-pink-500 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-lg shadow-pink-500/10";
+                bKash.classList.remove('border', 'border-slate-200/60', 'shadow-sm');
+                bKash.classList.add('border-2', 'border-pink-500', 'shadow-lg', 'shadow-pink-500/10');
                 text.innerText = "আপনি BKASH সিলেক্ট করেছেন।";
                 text.className = "text-xs font-bold text-center text-pink-500 mt-2";
                 label.innerText = "ACCOUNT DETAILS (BKASH)";
                 field.placeholder = "Enter Mobile Number";
             } else if (method === 'NOGOD') {
-                nogod.className = "bg-white border-2 border-orange-500 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-lg shadow-orange-500/10";
+                nogod.classList.remove('border', 'border-slate-200/60', 'shadow-sm');
+                nogod.classList.add('border-2', 'border-orange-500', 'shadow-lg', 'shadow-orange-500/10');
                 text.innerText = "আপনি NOGOD সিলেক্ট করেছেন।";
                 text.className = "text-xs font-bold text-center text-orange-500 mt-2";
                 label.innerText = "ACCOUNT DETAILS (NOGOD)";
                 field.placeholder = "Enter Mobile Number";
             } else if (method === 'ROKET') {
-                roket.className = "bg-white border-2 border-blue-500 p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition shadow-lg shadow-blue-500/10";
+                roket.classList.remove('border', 'border-slate-200/60', 'shadow-sm');
+                roket.classList.add('border-2', 'border-blue-500', 'shadow-lg', 'shadow-blue-500/10');
                 text.innerText = "আপনি ROKET সিলেক্ট করেছেন।";
                 text.className = "text-xs font-bold text-center text-blue-500 mt-2";
                 label.innerText = "ACCOUNT DETAILS (ROKET)";
@@ -1092,6 +1106,7 @@
             }
         }
 
+        // হুবহু শেষ স্ক্রিনশটের পেমেন্ট হিস্ট্রি কার্ড লেআউট ডিজাইন
         function renderPersonalTransactions() {
             const container = document.getElementById('personal-history-box');
             container.innerHTML = "";
@@ -1183,7 +1198,7 @@
         }
 
         // -----------------------------------------------------------------
-        // ৮. টাক্স লিস্ট রেন্ডারার
+        // ৮. টাক্স লিস্ট রেন্ডারার (টেলিগ্রাম ইন-অ্যাপ প্রটেকশন এপিআই) [1]
         // -----------------------------------------------------------------
         function renderTasks() {
             const container = document.getElementById('tasks-list-box');
@@ -1204,12 +1219,13 @@
 
                 let rightArea = "";
                 if (isCompleted) {
-                    rightArea = `<span class="text-xs font-black text-red-500">Complete</span>`;
+                    // সফলভাবে ক্লেইম করার পর চিরতরে বাটন লক হয়ে "Done" দেখাবে [1]
+                    rightArea = `<span class="text-xs font-black text-red-500">Done</span>`;
                 } else {
                     rightArea = `
                         <div id="wrapper-task-act-${id}">
-                            <button onclick="runTaskProcess('${id}', '${task.link}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] py-2 px-3.5 rounded-lg transition shadow-sm">
-                                Open Link
+                            <button onclick="runTaskProcess('${id}', '${task.link}', '${task.buttonText || 'Open Link'}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] py-2 px-3.5 rounded-lg transition shadow-sm">
+                                ${task.buttonText || 'Open Link'}
                             </button>
                         </div>
                     `;
@@ -1220,7 +1236,7 @@
                         <img src="${task.logo || 'https://via.placeholder.com/50'}" class="w-9 h-9 rounded-xl object-cover border border-slate-100 shadow-sm">
                         <div>
                             <h4 class="text-xs font-black text-slate-800">${task.title}</h4>
-                            <p class="text-[10px] text-yellow-500 font-extrabold">+${parseFloat(task.points).toFixed(2)} BDT</p>
+                            <p class="text-[10px] text-yellow-500 font-extrabold">+${parseFloat(task.points || 0).toFixed(2)} BDT</p>
                         </div>
                     </div>
                     <div>
@@ -1231,10 +1247,20 @@
             });
         }
 
-        function runTaskProcess(taskId, link) {
-            window.open(link, '_blank');
+        // টেলিগ্রামের নিজস্ব লিঙ্ক ওপেনিং এপিআই ব্যবহার করে রিলোড প্রটেকশন করা হয়েছে [1]
+        function runTaskProcess(taskId, link, originalText) {
+            // ১. টেলিগ্রামের ইন-অ্যাপ ব্রাউজারে লিঙ্ক খোলার মেথড [1]
+            if (window.Telegram && window.Telegram.WebApp) {
+                if (link.includes("t.me/")) {
+                    window.Telegram.WebApp.openTelegramLink(link);
+                } else {
+                    window.Telegram.WebApp.openLink(link);
+                }
+            } else {
+                window.open(link, '_blank');
+            }
+
             const wrapper = document.getElementById(`wrapper-task-act-${taskId}`);
-            
             let seconds = 10;
             wrapper.innerHTML = `<button class="bg-slate-100 text-slate-400 font-bold text-[10px] py-2 px-3.5 rounded-lg cursor-not-allowed" disabled>Wait ${seconds}s</button>`;
 
@@ -1245,7 +1271,7 @@
                 } else {
                     clearInterval(interval);
                     wrapper.innerHTML = `
-                        <button onclick="claimTaskPoints('${taskId}')" class="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-extrabold text-[10px] py-2 px-4 rounded-lg transition">
+                        <button onclick="claimTaskPoints('${taskId}')" class="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-extrabold text-[10px] py-2 px-4 rounded-lg transition shadow-md animate-pulse">
                             Claim
                         </button>
                     `;
@@ -1258,7 +1284,7 @@
                 const userRef = database.ref(`users/${tgUser.id}`);
                 userRef.once('value').then((snap) => {
                     const data = snap.val();
-                    if (data.tasksCompleted && data.tasksCompleted[taskId]) return;
+                    if (data.tasksCompleted && data.tasksCompleted[taskId]) return; // এক বারের বেশি ক্লেইম অসম্ভব [1]
 
                     const pts = parseFloat(tasksData[taskId].points || 0);
                     const updatedTasks = { ...(data.tasksCompleted || {}), [taskId]: true };
@@ -1303,13 +1329,14 @@
         }
 
         function renderTopSellersLeaderboard() {
+            // ১ রেফারেলের নিচে থাকলে লিডারবোর্ডে অংশ নিতে পারবে না
             const sorted = [...topPerformersList].sort((a, b) => {
                 if (activeLeaderboardFilter === 'refs') {
                     return b.refers - a.refers;
                 } else {
                     return b.balance - a.balance;
                 }
-            }).slice(0, 50);
+            }).slice(0, 50); // সর্বোচ্চ ৫০ জনকে দেখাবে
 
             const podiums = document.getElementById('podiums-container');
             const emptyState = document.getElementById('leaderboard-empty-state');
@@ -1318,6 +1345,7 @@
             listContainer.innerHTML = "";
 
             if (sorted.length === 0) {
+                // ১ রেফারেল সম্পন্ন কোনো ইউজার না থাকলে খালি অবস্থা দেখাবে (টপ সেলার নেই)
                 podiums.classList.add('hidden');
                 emptyState.classList.remove('hidden');
                 return;
@@ -1329,6 +1357,7 @@
             const top3 = sorted.slice(0, 3);
             const rest = sorted.slice(3);
 
+            // ১ নম্বর পজিশন রেন্ডারার
             if (top3[0]) {
                 document.getElementById('name-1st').innerText = top3[0].name;
                 document.getElementById('score-1st').innerText = activeLeaderboardFilter === 'refs' ? `${top3[0].refers} Refs` : `${top3[0].balance.toFixed(2)} BDT`;
@@ -1338,6 +1367,7 @@
                 document.getElementById('podium-1st').style.opacity = "0";
             }
 
+            // ২ নম্বর পজিশন রেন্ডারার
             if (top3[1]) {
                 document.getElementById('name-2nd').innerText = top3[1].name;
                 document.getElementById('score-2nd').innerText = activeLeaderboardFilter === 'refs' ? `${top3[1].refers} Refs` : `${top3[1].balance.toFixed(2)} BDT`;
@@ -1347,6 +1377,7 @@
                 document.getElementById('podium-2nd').style.opacity = "0";
             }
 
+            // ৩ নম্বর পজিশন রেন্ডারার
             if (top3[2]) {
                 document.getElementById('name-3rd').innerText = top3[2].name;
                 document.getElementById('score-3rd').innerText = activeLeaderboardFilter === 'refs' ? `${top3[2].refers} Refs` : `${top3[2].balance.toFixed(2)} BDT`;
@@ -1398,6 +1429,7 @@
             navigateToPage(`view-${tabName}`);
         }
 
+        // ডিভাইস ফ্রেন্ডলি ইউনিভার্সাল ক্লিপবোর্ড কপি স্ক্রিপ্ট (১০০% কার্যকারী)
         function copyReferLink() {
             const input = document.getElementById('ref-link-address');
             
@@ -1405,7 +1437,7 @@
             tempEl.value = input.value;
             document.body.appendChild(tempEl);
             tempEl.select();
-            tempEl.setSelectionRange(0, 99999);
+            tempEl.setSelectionRange(0, 99999); // iOS প্রটেকশন
             
             try {
                 document.execCommand('copy');
